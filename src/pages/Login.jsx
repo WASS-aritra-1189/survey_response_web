@@ -88,13 +88,13 @@ export default function Login() {
 
       <div className="login-card">
         <div className="login-header">
-          <div className="logo-circle">
+          {/* <div className="logo-circle">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
               <path d="M8 12h24v16H8z" stroke="currentColor" strokeWidth="2" fill="none" />
               <path d="M12 12v-2h16v2" stroke="currentColor" strokeWidth="2" />
               <circle cx="20" cy="20" r="3" fill="currentColor" />
             </svg>
-          </div>
+          </div> */}
           <h1 className="login-title">Survey Portal</h1>
           <p className="login-subtitle">Sign in to your account</p>
         </div>
@@ -134,6 +134,11 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 className={`form-input ${errors.password ? 'input-error' : ''}`}
               />
+              <svg className="input-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <rect x="4" y="9" width="12" height="9" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                <path d="M7 9V6a3 3 0 016 0v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                <circle cx="10" cy="13.5" r="1" fill="currentColor" />
+              </svg>
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}

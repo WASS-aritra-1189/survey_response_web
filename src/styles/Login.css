@@ -110,17 +110,13 @@
 .login-title {
   font-size: 28px;
   font-weight: 700;
-  color: #1a202c;
+  color: #000000;
   margin: 0 0 8px 0;
-  background: linear-gradient(135deg, #1e40af 0%, #0369a1 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .login-subtitle {
   font-size: 14px;
-  color: #718096;
+  color: #000000;
   margin: 0;
 }
 
@@ -141,7 +137,7 @@
 .form-label {
   font-size: 14px;
   font-weight: 600;
-  color: #2d3748;
+  color: #000000;
   display: block;
 }
 
@@ -163,6 +159,7 @@
   font-family: inherit;
   transition: all 0.3s ease;
   background: #f7fafc;
+  color: #000000;
 }
 
 .form-input:focus,
@@ -187,7 +184,7 @@
 .input-icon {
   position: absolute;
   left: 12px;
-  color: #a0aec0;
+  color: #000000;
   pointer-events: none;
 }
 
@@ -197,7 +194,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #a0aec0;
+  color: #000000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -235,7 +232,7 @@
 .captcha-text {
   font-size: 16px;
   font-weight: 700;
-  color: #2d3748;
+  color: #000000;
   font-family: 'Courier New', monospace;
   letter-spacing: 2px;
 }
@@ -366,7 +363,7 @@
 
 .footer-text {
   font-size: 12px;
-  color: #a0aec0;
+  color: #000000;
   margin: 0;
 }
 

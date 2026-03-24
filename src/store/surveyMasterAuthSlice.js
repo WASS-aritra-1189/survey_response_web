@@ -39,8 +39,13 @@ const surveyMasterAuthSlice = createSlice({
       const token = localStorage.getItem('surveyMasterToken');
       const master = localStorage.getItem('surveyMaster');
       if (token && master) {
-        state.accessToken = token;
-        state.surveyMaster = JSON.parse(master);
+        try {
+          state.accessToken = token;
+          state.surveyMaster = JSON.parse(master);
+        } catch {
+          localStorage.removeItem('surveyMasterToken');
+          localStorage.removeItem('surveyMaster');
+        }
       }
     },
   },
