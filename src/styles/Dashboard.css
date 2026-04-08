@@ -374,6 +374,55 @@
   font-size: 0.75rem;
 }
 
+.survey-private-url {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+}
+
+.url-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #3730a3;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.4rem;
+}
+
+.url-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.url-text {
+  flex: 1;
+  font-size: 0.75rem;
+  color: #4338ca;
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-copy {
+  background: #4338ca;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.6rem;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.btn-copy:hover { background: #3730a3; }
+
 .card-actions {
   display: flex;
   gap: 0.5rem;

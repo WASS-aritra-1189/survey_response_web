@@ -161,6 +161,22 @@ export default function Dashboard() {
                   <small>Updated: {formatDate(survey.updatedAt)}</small>
                 </div>
 
+                {survey.privateUrl && (
+                  <div className="survey-private-url">
+                    <small className="url-label">🔒 Private URL</small>
+                    <div className="url-row">
+                      <span className="url-text">{survey.privateUrl}</span>
+                      <button
+                        className="btn-copy"
+                        onClick={() => navigator.clipboard.writeText(survey.privateUrl)}
+                        title="Copy private URL"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="card-actions">
                   <button 
                     onClick={() => handleViewSurvey(survey.publicUrl)}
