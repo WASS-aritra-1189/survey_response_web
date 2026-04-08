@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { Component } from 'react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import SurveyForm from './pages/SurveyForm';
 import './App.css';
 
 class ErrorBoundary extends Component {
@@ -53,6 +54,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/survey/private/:id"
+            element={
+              <ProtectedRoute>
+                <SurveyForm />
               </ProtectedRoute>
             }
           />

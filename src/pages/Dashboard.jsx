@@ -38,11 +38,11 @@ export default function Dashboard() {
   };
 
   const handleViewSurvey = (publicUrl) => {
-    window.open(publicUrl, '_blank');
+    if (publicUrl) window.open(publicUrl, '_blank');
   };
 
-  const handleCollectResponses = (publicUrl) => {
-    window.open(publicUrl, '_blank');
+  const handleCollectResponses = (privateUrl, surveyId) => {
+    navigate(`/survey/private/${surveyId}`);
   };
 
   const getStatusBadgeClass = (status) => {
@@ -104,9 +104,8 @@ export default function Dashboard() {
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M9 11H7v6h2v-6zm4-7H11v13h2V4zm4 3h-2v10h2V7z" />
             </svg>
-            <h3>No surveys yet</h3>
-            <p>Create your first survey to get started</p>
-            <button className="btn-create-survey-empty">+ Create Survey</button>
+            <h3>No surveys assigned</h3>
+            <p>You have no surveys assigned to you yet. Please contact your administrator.</p>
           </div>
         ) : (
           <div className="surveys-grid">
@@ -166,11 +165,13 @@ export default function Dashboard() {
                   <button 
                     onClick={() => handleViewSurvey(survey.publicUrl)}
                     className="btn-action btn-view"
+                    disabled={!survey.publicUrl}
+                    title={survey.publicUrl ? 'Open public survey' : 'Public access not enabled'}
                   >
                     View
                   </button>
                   <button 
-                    onClick={() => handleCollectResponses(survey.publicUrl)}
+                    onClick={() => handleCollectResponses(survey.privateUrl, survey.id)}
                     className="btn-action btn-collect"
                   >
                     Collect Responses
