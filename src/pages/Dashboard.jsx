@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLoading, setSurveys, fetchSurveysFailure, clearError } from '../store/surveySlice';
@@ -43,6 +43,14 @@ export default function Dashboard() {
 
   const handleCollectResponses = (privateUrl, surveyId) => {
     navigate(`/survey/private/${surveyId}`);
+  };
+
+  const [copiedId, setCopiedId] = useState(null);
+
+  const handleCopyUrl = (surveyId, url) => {
+    navigator.clipboard.writeText(url);
+    setCopiedId(surveyId);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const getStatusBadgeClass = (status) => {
@@ -167,11 +175,11 @@ export default function Dashboard() {
                     <div className="url-row">
                       <span className="url-text">{survey.privateUrl}</span>
                       <button
-                        className="btn-copy"
-                        onClick={() => navigator.clipboard.writeText(survey.privateUrl)}
+                        className={`btn-copy ${copiedId === survey.id ? 'btn-copy-success' : ''}`}
+                        onClick={() => handleCopyUrl(survey.id, survey.privateUrl)}
                         title="Copy private URL"
                       >
-                        Copy
+                        {copiedId === survey.id ? '✓ Copied!' : 'Copy'}
                       </button>
                     </div>
                   </div>

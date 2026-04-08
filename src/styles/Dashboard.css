@@ -423,6 +423,10 @@
 
 .btn-copy:hover { background: #3730a3; }
 
+.btn-copy-success {
+  background: #48bb78 !important;
+}
+
 .card-actions {
   display: flex;
   gap: 0.5rem;
