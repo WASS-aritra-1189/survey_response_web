@@ -79,7 +79,7 @@ export default function SurveyForm() {
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
   const [answers, setAnswers] = useState({});
   const [audioBlobs, setAudioBlobs] = useState({});
   const [location, setLocation] = useState(null);
@@ -107,9 +107,13 @@ export default function SurveyForm() {
     );
   };
 
-  const handleAnswer = (questionId, value) => setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  const handleAnswer = (questionId, value) => {
+    setSuccessMsg('');
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  };
 
   const handleCheckbox = (questionId, optionText, checked) => {
+    setSuccessMsg('');
     setAnswers((prev) => {
       const current = prev[questionId] || [];
       return { ...prev, [questionId]: checked ? [...current, optionText] : current.filter((v) => v !== optionText) };
@@ -166,7 +170,12 @@ export default function SurveyForm() {
         }
       }
 
-      setSubmitted(true);
+      setSuccessMsg('Response submitted successfully! You can submit another response below.');
+      setAnswers({});
+      setAudioBlobs({});
+      setLocation(null);
+      // scroll to top of form
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setError(err.message || 'Failed to submit survey.');
     } finally {
@@ -175,15 +184,6 @@ export default function SurveyForm() {
   };
 
   if (loading) return <div className="sf-center"><div className="sf-spinner" /><p>Loading survey...</p></div>;
-
-  if (submitted) return (
-    <div className="sf-center">
-      <div className="sf-success-icon">✓</div>
-      <h2>Response Submitted!</h2>
-      <p>Thank you for completing the survey.</p>
-      <button className="sf-btn-primary" onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
-    </div>
-  );
 
   if (!survey) return (
     <div className="sf-center">
@@ -285,6 +285,13 @@ export default function SurveyForm() {
                 <AudioRecorder questionId={q.id} onAudioReady={handleAudioReady} />
               </div>
             ))}
+
+            {successMsg && (
+              <div className="sf-success-banner">
+                <span className="sf-success-icon-sm">✓</span>
+                <span>{successMsg}</span>
+              </div>
+            )}
 
             {error && <p className="sf-error-text">{error}</p>}
 
