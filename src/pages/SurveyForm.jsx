@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import axiosInstance from '../config/axiosInstance';
@@ -85,6 +85,49 @@ export default function SurveyForm() {
     );
   };
 
+  // Check if a question should be displayed based on conditional logic
+  const shouldShowQuestion = (question) => {
+    if (!question.parentQuestionId) return true; // No parent = always show
+    const parentAnswer = answers[question.parentQuestionId];
+    if (parentAnswer === undefined || parentAnswer === null || parentAnswer === '') return false; // Parent not answered yet
+    
+    const conditionValue = question.conditionValue;
+    const operator = question.conditionOperator || 'equals';
+    
+    // Handle array answers (for checkboxes/multiple choice)
+    const parentArrayAnswer = Array.isArray(parentAnswer) ? parentAnswer : [parentAnswer];
+    const conditionArrayValue = conditionValue ? [conditionValue] : [];
+    
+    switch (operator) {
+      case 'equals':
+        return parentAnswer === conditionValue;
+      case 'not_equals':
+        return parentAnswer !== conditionValue;
+      case 'contains':
+        return parentArrayAnswer.some(a => conditionArrayValue.some(v => a === v));
+      case 'greater_than':
+        return Number(parentAnswer) > Number(conditionValue);
+      case 'less_than':
+        return Number(parentAnswer) < Number(conditionValue);
+      case 'greater_than_equal':
+        return Number(parentAnswer) >= Number(conditionValue);
+      case 'less_than_equal':
+        return Number(parentAnswer) <= Number(conditionValue);
+      case 'is_empty':
+        return !parentAnswer || parentAnswer === '' || (Array.isArray(parentAnswer) && parentAnswer.length === 0);
+      case 'is_not_empty':
+        return parentAnswer && parentAnswer !== '' && !(Array.isArray(parentAnswer) && parentAnswer.length === 0);
+      default:
+        return parentAnswer === conditionValue;
+    }
+  };
+
+  // Get visible questions (filter out conditional questions that don't meet their condition)
+  const visibleQuestions = useMemo(() => {
+    if (!survey?.questions) return [];
+    return survey.questions.filter(shouldShowQuestion);
+  }, [survey?.questions, answers, shouldShowQuestion]);
+
   const handleAnswer = (questionId, value) => {
     setSuccessMsg('');
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -105,13 +148,13 @@ export default function SurveyForm() {
     if (survey.requiresLocationValidation && !location) {
       setError('Please capture your location before submitting.'); return;
     }
-    for (const q of survey.questions) {
+    for (const q of visibleQuestions) {
       if (q.isRequired && !answers[q.id]) {
         setError(`Please answer: ${q.questionText}`); return;
       }
     }
 
-    const responses = survey.questions.map((q) => ({
+    const responses = visibleQuestions.map((q) => ({
       questionId: q.id,
       answer: Array.isArray(answers[q.id]) ? answers[q.id].join(', ') : answers[q.id] || '',
     }));
@@ -204,7 +247,7 @@ export default function SurveyForm() {
           )}
 
           <form onSubmit={handleSubmit} className="sf-form">
-            {survey.questions?.map((q, i) => (
+            {visibleQuestions.map((q, i) => (
               <div key={q.id} className="sf-question">
                 <label className="sf-question-label">
                   {i + 1}. {q.questionText}
